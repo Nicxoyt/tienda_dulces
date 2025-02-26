@@ -20,47 +20,51 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        const precios = { "Muu": 600, "Quipitos": 700, "Candy runch": 800, "Lenguas": 300, "Traident": 400, "Chaos": 200, "Papas": 600 };
+
         window.calcularPrecio = function () {
-            const precios = { "Muu": 600, "Quipitos": 700, "Candy runch": 800, "Lenguas": 300, "Traident": 400, "Chaos": 200, "Papas": 600 };
             let total = 0;
-            document.querySelectorAll(".producto-select").forEach((select, index) => {
-                const producto = select.value;
-                const cantidad = parseInt(document.querySelectorAll(".producto-cantidad")[index].value) || 0;
+            document.querySelectorAll(".producto-item").forEach(item => {
+                const producto = item.querySelector(".producto-select").value;
+                const cantidad = parseInt(item.querySelector(".producto-cantidad").value) || 0;
                 if (precios[producto]) {
                     total += precios[producto] * cantidad;
                 }
             });
             document.getElementById("total").innerText = "Total: $" + total;
         };
+
+        window.agregarProducto = function () {
+            const productosContainer = document.getElementById("productos-container");
+            const nuevoProducto = document.createElement("div");
+            nuevoProducto.classList.add("producto-item");
+            nuevoProducto.innerHTML = `
+                <select class="producto-select" onchange="calcularPrecio()">
+                    <option value="Muu">Muu</option>
+                    <option value="Quipitos">Quipitos</option>
+                    <option value="Candy runch">Candy runch</option>
+                    <option value="Lenguas">Lenguas</option>
+                    <option value="Traident">Traident</option>
+                    <option value="Chaos">Chaos</option>
+                    <option value="Papas">Papas</option>
+                </select>
+                <input type="number" class="producto-cantidad" placeholder="Cantidad" required oninput="calcularPrecio()">
+            `;
+            productosContainer.appendChild(nuevoProducto);
+        };
         
         window.enviarEncargo = async function (event) {
             event.preventDefault();
             let nombre = document.querySelector("input[name='nombre']").value;
             let productos = [];
-            document.querySelectorAll(".producto-select").forEach((select, index) => {
-                let cantidad = document.querySelectorAll(".producto-cantidad")[index].value;
-                productos.push({ producto: select.value, cantidad: cantidad });
+            document.querySelectorAll(".producto-item").forEach(item => {
+                let producto = item.querySelector(".producto-select").value;
+                let cantidad = item.querySelector(".producto-cantidad").value;
+                productos.push({ producto, cantidad });
             });
             
             await addDoc(collection(db, "encargos"), { nombre, productos });
             alert("Encargo enviado");
-        };
-        
-        window.mostrarEncargos = async function () {
-            let codigo = prompt("Ingrese código de acceso:");
-            if (codigo === "4444") {
-                const querySnapshot = await getDocs(collection(db, "encargos"));
-                let pedidosContainer = document.getElementById("pedidos");
-                pedidosContainer.innerHTML = "";
-                querySnapshot.forEach((doc) => {
-                    let pedido = doc.data();
-                    let div = document.createElement("div");
-                    div.innerHTML = `<strong>${pedido.nombre}</strong>: ${pedido.productos.map(p => `${p.producto} (${p.cantidad})`).join(", ")}`;
-                    pedidosContainer.appendChild(div);
-                });
-            } else {
-                alert("Código incorrecto");
-            }
         };
     </script>
     <style>
@@ -109,22 +113,25 @@
             <h2>Hacer un Encargo</h2>
             <form onsubmit="enviarEncargo(event)">
                 <input type="text" name="nombre" placeholder="Tu nombre" required>
-                <select class="producto-select" name="producto[]" required onchange="calcularPrecio()">
-                    <option value="Muu">Muu</option>
-                    <option value="Quipitos">Quipitos</option>
-                    <option value="Candy runch">Candy runch</option>
-                    <option value="Lenguas">Lenguas</option>
-                    <option value="Traident">Traident</option>
-                    <option value="Chaos">Chaos</option>
-                    <option value="Papas">Papas</option>
-                </select>
-                <input type="number" class="producto-cantidad" name="cantidad[]" placeholder="Cantidad" required oninput="calcularPrecio()">
+                <div id="productos-container">
+                    <div class="producto-item">
+                        <select class="producto-select" onchange="calcularPrecio()">
+                            <option value="Muu">Muu</option>
+                            <option value="Quipitos">Quipitos</option>
+                            <option value="Candy runch">Candy runch</option>
+                            <option value="Lenguas">Lenguas</option>
+                            <option value="Traident">Traident</option>
+                            <option value="Chaos">Chaos</option>
+                            <option value="Papas">Papas</option>
+                        </select>
+                        <input type="number" class="producto-cantidad" placeholder="Cantidad" required oninput="calcularPrecio()">
+                    </div>
+                </div>
+                <button type="button" onclick="agregarProducto()">Añadir otro producto</button>
                 <p id="total">Total: $0</p>
                 <button type="submit">Enviar Encargo</button>
             </form>
         </div>
-        <button onclick="mostrarEncargos()">Ver Encargos</button>
-        <div id="pedidos"></div>
     </div>
 </body>
 </html>
