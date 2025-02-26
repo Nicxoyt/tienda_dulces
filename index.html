@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda de Dulces</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "aaaa-2c958.firebaseapp.com",
+            projectId: "aaaa-2c958",
+            storageBucket: "aaaa-2c958.appspot.com",
+            messagingSenderId: "93944157858",
+            appId: "1:93944157858:web:165790e4341af9c3d769fb"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.calcularPrecio = function () {
+            const precios = { "Muu": 600, "Quipitos": 700, "Candy runch": 800, "Lenguas": 300, "Traident": 400, "Chaos": 200, "Papas": 600 };
+            let total = 0;
+            document.querySelectorAll(".producto-select").forEach((select, index) => {
+                const producto = select.value;
+                const cantidad = parseInt(document.querySelectorAll(".producto-cantidad")[index].value) || 0;
+                if (precios[producto]) {
+                    total += precios[producto] * cantidad;
+                }
+            });
+            document.getElementById("total").innerText = "Total: $" + total;
+        };
+        
+        window.enviarEncargo = async function (event) {
+            event.preventDefault();
+            let nombre = document.querySelector("input[name='nombre']").value;
+            let productos = [];
+            document.querySelectorAll(".producto-select").forEach((select, index) => {
+                let cantidad = document.querySelectorAll(".producto-cantidad")[index].value;
+                productos.push({ producto: select.value, cantidad: cantidad });
+            });
+            
+            await addDoc(collection(db, "encargos"), { nombre, productos });
+            alert("Encargo enviado");
+        };
+        
+        window.mostrarEncargos = async function () {
+            let codigo = prompt("Ingrese código de acceso:");
+            if (codigo === "4444") {
+                const querySnapshot = await getDocs(collection(db, "encargos"));
+                let pedidosContainer = document.getElementById("pedidos");
+                pedidosContainer.innerHTML = "";
+                querySnapshot.forEach((doc) => {
+                    let pedido = doc.data();
+                    let div = document.createElement("div");
+                    div.innerHTML = `<strong>${pedido.nombre}</strong>: ${pedido.productos.map(p => `${p.producto} (${p.cantidad})`).join(", ")}`;
+                    pedidosContainer.appendChild(div);
+                });
+            } else {
+                alert("Código incorrecto");
+            }
+        };
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .producto, .pedido {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .formulario {
+            margin-top: 20px;
+        }
+        input, button, select {
+            padding: 10px;
+            margin: 5px;
+            width: calc(100% - 22px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lista de Productos</h1>
+        <div class="producto"><span>Muu</span> <span>$600</span></div>
+        <div class="producto"><span>Quipitos</span> <span>$700</span></div>
+        <div class="producto"><span>Candy runch</span> <span>$800</span></div>
+        <div class="producto"><span>Lenguas</span> <span>$300</span></div>
+        <div class="producto"><span>Traident</span> <span>$400</span></div>
+        <div class="producto"><span>Chaos</span> <span>$200</span></div>
+        <div class="producto"><span>Papas</span> <span>$600</span></div>
+        
+        <div class="formulario">
+            <h2>Hacer un Encargo</h2>
+            <form onsubmit="enviarEncargo(event)">
+                <input type="text" name="nombre" placeholder="Tu nombre" required>
+                <select class="producto-select" name="producto[]" required onchange="calcularPrecio()">
+                    <option value="Muu">Muu</option>
+                    <option value="Quipitos">Quipitos</option>
+                    <option value="Candy runch">Candy runch</option>
+                    <option value="Lenguas">Lenguas</option>
+                    <option value="Traident">Traident</option>
+                    <option value="Chaos">Chaos</option>
+                    <option value="Papas">Papas</option>
+                </select>
+                <input type="number" class="producto-cantidad" name="cantidad[]" placeholder="Cantidad" required oninput="calcularPrecio()">
+                <p id="total">Total: $0</p>
+                <button type="submit">Enviar Encargo</button>
+            </form>
+        </div>
+        <button onclick="mostrarEncargos()">Ver Encargos</button>
+        <div id="pedidos"></div>
+    </div>
+</body>
+</html>
